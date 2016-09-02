@@ -81,6 +81,7 @@ class DiagnosticsManager {
                 case DKUnusedImport: getUnusedImportActions(params, d);
                 case DKUnresolvedIdentifier: getUnresolvedIdentifierActions(params, d);
                 case DKCompilerError: getCompilerErrorActions(params, d);
+                case DKMissingInterfaceFields: getMissingInterfaceFieldsActions(params, d);
             });
         }
         return actions;
@@ -115,6 +116,16 @@ class DiagnosticsManager {
             command: "haxe.applyFixes",
             arguments: [params.textDocument.uri, 0 /*TODO*/, [{range: range, newText: ""}]]
         }];
+    }
+
+    function getMissingInterfaceFieldsActions(params:CodeActionParams, d:Diagnostic):Array<Command> {
+        var args = getDiagnosticsArguments(DKMissingInterfaceFields, d.range);
+        var fields = [];
+        for (arg in args) {
+            var field:haxe.macro.Expr.Field = haxe.Unserializer.run(arg);
+            trace(new haxe.macro.Printer().printField(field));
+        }
+        return fields;
     }
 
     function getUnresolvedIdentifierActions(params:CodeActionParams, d:Diagnostic):Array<Command> {
@@ -216,6 +227,7 @@ class DiagnosticsManager {
     var DKUnusedImport:DiagnosticsKind<Void> = 0;
     var DKUnresolvedIdentifier:DiagnosticsKind<Array<{kind: UnresolvedIdentifierSuggestion, name: String}>> = 1;
     var DKCompilerError:DiagnosticsKind<Array<String>> = 2;
+    var DKMissingInterfaceFields:DiagnosticsKind<Array<String>> = 3;
 
     public inline function new(i:Int) {
         this = i;
@@ -226,6 +238,7 @@ class DiagnosticsManager {
             case DKUnusedImport: "Unused import";
             case DKUnresolvedIdentifier: "Unresolved identifier";
             case DKCompilerError: args[0];
+            case DKMissingInterfaceFields: "Missing interface fields";
         }
     }
 }
