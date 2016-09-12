@@ -7,13 +7,9 @@
 
 --each
 
--main haxeLanguageServer.Main
+haxeLanguageServer.Main
+hxmlLanguageServer.Main
 -js ../bin/server.js
-
---next
-
--main hxmlLanguageServer.Main
--js ../bin/hxml_server.js
 
 --next
 

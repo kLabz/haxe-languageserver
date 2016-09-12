@@ -6,7 +6,9 @@ import jsonrpc.node.MessageWriter;
 import jsonrpc.Protocol;
 import languageServerProtocol.Types;
 
+@:expose("hxmlLanguageServer.Main")
 class Main {
+    @:keep
     static function main() {
         var reader = new MessageReader(process.stdin);
         var writer = new MessageWriter(process.stdout);
