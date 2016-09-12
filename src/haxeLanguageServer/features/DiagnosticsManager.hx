@@ -4,6 +4,7 @@ import haxeLanguageServer.helper.PathHelper;
 import haxeLanguageServer.helper.ImportHelper;
 import languageServerProtocol.Types;
 import js.node.ChildProcess;
+import common.Uri;
 
 class DiagnosticsManager {
     var context:Context;
@@ -55,7 +56,7 @@ class DiagnosticsManager {
                 trace("Error parsing diagnostics response: " + Std.string(e));
                 return;
             }
-       
+
         var pathFilter = PathHelper.preparePathFilter(
             context.config.diagnosticsPathFilter, haxelibPath, context.workspacePath);
         for (data in data) {

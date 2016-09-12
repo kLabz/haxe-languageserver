@@ -1,4 +1,4 @@
-package haxeLanguageServer;
+package common;
 
 import languageServerProtocol.Types;
 
@@ -21,7 +21,6 @@ class TextDocuments {
         return documents[uri];
     }
 
-    @:allow(haxeLanguageServer.Context)
     function onDidOpenTextDocument(event:DidOpenTextDocumentParams) {
         var td = event.textDocument;
         documents[td.uri] = new TextDocument(td.uri, td.languageId, td.version, td.text);

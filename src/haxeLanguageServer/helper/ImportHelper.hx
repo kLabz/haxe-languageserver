@@ -1,6 +1,6 @@
 package haxeLanguageServer.helper;
 
-import haxeLanguageServer.TextDocument;
+import common.TextDocument;
 import languageServerProtocol.Types;
 
 class ImportHelper {

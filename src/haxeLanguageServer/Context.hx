@@ -6,6 +6,7 @@ import jsonrpc.Types;
 import jsonrpc.Protocol;
 import languageServerProtocol.Types;
 import haxeLanguageServer.features.*;
+import common.TextDocuments;
 
 private typedef DisplayServerConfigBase = {
     var haxePath:String;
@@ -166,6 +167,7 @@ class Context {
         }
     }
 
+    @:access(common.TextDocuments.onDidOpenTextDocument)
     function onDidOpenTextDocument(event:DidOpenTextDocumentParams) {
         documents.onDidOpenTextDocument(event);
         if (diagnostics != null && config.enableDiagnostics)

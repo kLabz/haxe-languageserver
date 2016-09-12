@@ -5,6 +5,7 @@ import jsonrpc.CancellationToken;
 import jsonrpc.ResponseError;
 import jsonrpc.Types.NoData;
 import languageServerProtocol.Types;
+import common.HaxePosition;
 
 class GotoDefinitionFeature {
     var context:Context;

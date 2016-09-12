@@ -1,7 +1,7 @@
 package haxeLanguageServer.helper;
 
 import haxe.unit.TestCase;
-import haxeLanguageServer.TextDocument;
+import common.TextDocument;
 import haxe.PosInfos;
 using StringTools;
 
@@ -60,8 +60,8 @@ class ImportHelperTest extends TestCase {
     ";
 
     var ComplexPackage = "
-    
-    
+
+
     package     test._underscore.____s   ;
 
     |import haxe.io.Path;

@@ -4,6 +4,9 @@ import jsonrpc.CancellationToken;
 import jsonrpc.ResponseError;
 import jsonrpc.Types.NoData;
 import languageServerProtocol.Types;
+import common.TextDocument;
+import common.Uri;
+import common.HaxePosition;
 
 @:enum
 private abstract ModuleSymbolKind(Int) {

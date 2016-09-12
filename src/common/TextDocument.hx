@@ -1,4 +1,4 @@
-package haxeLanguageServer;
+package common;
 
 import js.node.Buffer;
 import languageServerProtocol.Types;
@@ -10,7 +10,7 @@ class TextDocument {
     public var version(default,null):Int;
     public var content(default,null):String;
     public var lineCount(get,never):Int;
-    @:allow(haxeLanguageServer.TextDocuments)
+    @:allow(common.TextDocuments)
     var lineOffsets:Array<Int>;
 
     public function new(uri:String, languageId:String, version:Int, content:String) {

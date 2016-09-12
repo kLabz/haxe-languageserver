@@ -1,6 +1,7 @@
-package haxeLanguageServer;
+package common;
 
 import languageServerProtocol.Types.Location;
+import common.TextDocument;
 
 class HaxePosition {
     static var positionRe = ~/^(.+):(\d+): (?:lines (\d+)-(\d+)|character(?:s (\d+)-| )(\d+))$/;

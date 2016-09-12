@@ -12,6 +12,11 @@
 
 --next
 
+-main hxmlLanguageServer.Main
+-js ../bin/hxml_server.js
+
+--next
+
 -cp test
 -main haxeLanguageServer.TestMain
 -js ../bin/test.js

@@ -1,4 +1,4 @@
-package haxeLanguageServer;
+package hxmlLanguageServer;
 
 import js.Node.process;
 import jsonrpc.node.MessageReader;
@@ -13,7 +13,7 @@ class Main {
         var protocol = new Protocol(writer.write);
         protocol.logError = function(message) protocol.sendNotification(Methods.LogMessage, {type: Warning, message: message});
         common.HaxeTrace.setup(protocol);
-        new Context(protocol);
+		new Context(protocol);
         reader.listen(protocol.handleMessage);
     }
 }

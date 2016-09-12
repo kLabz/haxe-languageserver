@@ -5,6 +5,7 @@ import jsonrpc.ResponseError;
 import languageServerProtocol.Types;
 import jsonrpc.Types.NoData;
 import haxeLanguageServer.helper.TypeHelper.*;
+import common.HaxePosition;
 
 class HoverFeature {
     var context:Context;

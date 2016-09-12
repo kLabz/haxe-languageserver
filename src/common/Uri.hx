@@ -1,4 +1,4 @@
-package haxeLanguageServer;
+package common;
 
 // these was ported from VS Code sources
 class Uri {
