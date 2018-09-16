@@ -1,0 +1,24 @@
+-lib haxe-hxparser
+-lib haxeparser
+-lib hxnodejs
+-lib node-shebang
+-lib tokentree
+-lib formatter
+-lib json2object
+-lib compiletime
+-lib hx3compat
+
+-cp src
+-cp protocol/src
+
+-D hxnodejs-no-version-warning
+-D JSTACK_FORMAT=vscode
+
+-js bin/server.js
+-dce full
+-debug
+-main haxeLanguageServer.Main
+
+--next
+-cmd "chmod +x bin/server.js"
+
