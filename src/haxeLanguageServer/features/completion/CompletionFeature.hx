@@ -495,6 +495,7 @@ class CompletionFeature {
 
 		var item:CompletionItem = {
 			label: unqualifiedName + if (containerName == "") "" else " - " + dotPath,
+			insertText: unqualifiedName,
 			kind: getKindForModuleType(type),
 			textEdit: {
 				range: data.replaceRange,
