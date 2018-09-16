@@ -1,0 +1,21 @@
+-lib hxnodejs
+-lib haxe-hxparser
+-lib hxparse
+-lib haxeparser
+-lib tokentree
+-lib formatter
+-lib json2object
+-lib json-rpc
+-lib node-shebang
+
+-cp src
+-cp protocol/src
+
+-D analyzer-optimize
+-D js-enums-as-arrays
+-D js-es=6
+-D JSTACK_FORMAT=vscode
+
+-dce full
+-js bin/server.js
+-main haxeLanguageServer.Main

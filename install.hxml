@@ -1,0 +1,9 @@
+-lib hxnodejs:git:https://github.com/HaxeFoundation/hxnodejs#38bdefd
+-lib haxe-hxparser:git:https://github.com/vshaxe/haxe-hxparser#b27d793
+-lib hxparse:git:https://github.com/Simn/hxparse#53b7917
+-lib haxeparser:git:https://github.com/Simn/haxeparser#531e224
+-lib tokentree:1.0.18
+-lib formatter:1.6.0
+-lib json2object:3.6.2
+-lib json-rpc:git:https://github.com/vshaxe/json-rpc#e1f94e8
+-lib node-shebang:0.1.0
