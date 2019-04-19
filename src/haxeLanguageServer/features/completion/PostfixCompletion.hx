@@ -128,90 +128,90 @@ class PostfixCompletion {
 				});
 		}
 
-		if (dotPath != "String") {
-			add({
-				label: "string",
-				detail: "Std.string(expr)",
-				insertText: 'Std.string($expr)',
-				insertTextFormat: PlainText
-			});
-		}
+		// if (dotPath != "String") {
+		// 	add({
+		// 		label: "string",
+		// 		detail: "Std.string(expr)",
+		// 		insertText: 'Std.string($expr)',
+		// 		insertTextFormat: PlainText
+		// 	});
+		// }
 
-		add({
-			label: "trace",
-			detail: "trace(expr);",
-			insertText: 'trace($${1:$expr});',
-			insertTextFormat: Snippet
-		});
+		// add({
+		// 	label: "trace",
+		// 	detail: "trace(expr);",
+		// 	insertText: 'trace($${1:$expr});',
+		// 	insertTextFormat: Snippet
+		// });
 		// TODO: check if we're on a sys target
-		add({
-			label: "print",
-			detail: "Sys.println(expr);",
-			insertText: 'Sys.println($${1:$expr});',
-			insertTextFormat: Snippet
-		});
+		// add({
+		// 	label: "print",
+		// 	detail: "Sys.println(expr);",
+		// 	insertText: 'Sys.println($${1:$expr});',
+		// 	insertTextFormat: Snippet
+		// });
 
-		add({
-			label: "is",
-			detail: "Std.is(expr, T)",
-			insertText: 'Std.is($expr, $1)',
-			insertTextFormat: Snippet,
-			command: TriggerSuggest
-		});
-		add({
-			label: "unsafe cast",
-			detail: "cast expr",
-			insertText: 'cast $expr',
-			insertTextFormat: PlainText
-		});
-		add({
-			label: "safe cast",
-			detail: "cast(expr, T)",
-			insertText: 'cast($expr, $1)',
-			insertTextFormat: Snippet,
-			command: TriggerSuggest
-		});
-		add({
-			label: "type check",
-			detail: "(expr : T)",
-			insertText: '($expr : $1)',
-			insertTextFormat: Snippet,
-			command: TriggerSuggest
-		});
+		// add({
+		// 	label: "is",
+		// 	detail: "Std.is(expr, T)",
+		// 	insertText: 'Std.is($expr, $1)',
+		// 	insertTextFormat: Snippet,
+		// 	command: TriggerSuggest
+		// });
+		// add({
+		// 	label: "unsafe cast",
+		// 	detail: "cast expr",
+		// 	insertText: 'cast $expr',
+		// 	insertTextFormat: PlainText
+		// });
+		// add({
+		// 	label: "safe cast",
+		// 	detail: "cast(expr, T)",
+		// 	insertText: 'cast($expr, $1)',
+		// 	insertTextFormat: Snippet,
+		// 	command: TriggerSuggest
+		// });
+		// add({
+		// 	label: "type check",
+		// 	detail: "(expr : T)",
+		// 	insertText: '($expr : $1)',
+		// 	insertTextFormat: Snippet,
+		// 	command: TriggerSuggest
+		// });
 
 		// TODO: check if subject is nullable on current target?
-		add({
-			label: "null",
-			detail: "if (expr == null)",
-			insertText: 'if ($expr == null) $block',
-			insertTextFormat: Snippet
-		});
-		add({
-			label: "not null",
-			detail: "if (expr != null)",
-			insertText: 'if ($expr != null) $block',
-			insertTextFormat: Snippet
-		});
+		// add({
+		// 	label: "null",
+		// 	detail: "if (expr == null)",
+		// 	insertText: 'if ($expr == null) $block',
+		// 	insertTextFormat: Snippet
+		// });
+		// add({
+		// 	label: "not null",
+		// 	detail: "if (expr != null)",
+		// 	insertText: 'if ($expr != null) $block',
+		// 	insertTextFormat: Snippet
+		// });
 
-		add({
-			label: "return",
-			detail: "return expr;",
-			insertText: 'return $expr;',
-			insertTextFormat: PlainText
-		});
+		// add({
+		// 	label: "return",
+		// 	detail: "return expr;",
+		// 	insertText: 'return $expr;',
+		// 	insertTextFormat: PlainText
+		// });
 
-		function createLocalItem(kind:String, sortText:String):PostfixCompletionItem {
-			return {
-				label: kind,
-				detail: '$kind name = $expr;',
-				insertText: '$kind $${1:name} = $expr;',
-				insertTextFormat: Snippet,
-				eat: ";"
-			};
-		}
+		// function createLocalItem(kind:String, sortText:String):PostfixCompletionItem {
+		// 	return {
+		// 		label: kind,
+		// 		detail: '$kind name = $expr;',
+		// 		insertText: '$kind $${1:name} = $expr;',
+		// 		insertTextFormat: Snippet,
+		// 		eat: ";"
+		// 	};
+		// }
 
-		add(createLocalItem("var", "1"));
-		add(createLocalItem("final", "2"));
+		// add(createLocalItem("var", "1"));
+		// add(createLocalItem("final", "2"));
 
 		for (item in createLengthIterators(subject, items, expr)) {
 			add(item);
