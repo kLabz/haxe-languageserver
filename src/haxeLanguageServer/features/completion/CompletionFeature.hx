@@ -54,6 +54,7 @@ class CompletionFeature {
 	var snippetSupport:Bool;
 	var commitCharactersSupport:Bool;
 	var deprecatedSupport:Bool;
+	var finalWord = ~/\b(\w+)$/;
 
 	public function new(context) {
 		this.context = context;
@@ -235,6 +236,33 @@ class CompletionFeature {
 				importPosition: importPosition,
 				tokenContext: tokenContext
 			};
+
+			if (data.replaceRange == null) {
+				var startLine = {
+					character : 0,
+					line : data.completionPosition.line
+				}
+				var lineBefore = doc.getText({
+					start: startLine,
+					end: data.completionPosition
+				});
+
+				var start  = {
+					character : data.completionPosition.character,
+					line : data.completionPosition.line
+				}
+				var end = {
+					character : data.completionPosition.character,
+					line : data.completionPosition.line
+				}
+
+				if (finalWord.match(lineBefore)) {
+					start.character -= finalWord.matched(0).length;
+				}
+
+				data.replaceRange = { start : start , end : end};
+			}
+
 			var displayItems = result.items;
 			var items = [];
 			items = items.concat(postfixCompletion.createItems(data, displayItems));
