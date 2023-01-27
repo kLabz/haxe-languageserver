@@ -174,7 +174,7 @@ class CompletionFeature {
 		final haxeParams:HaxeCompletionParams = {
 			file: doc.uri.toFsPath(),
 			contents: doc.content,
-			offset: offset,
+			offset: context.displayOffsetConverter.characterOffsetToByteOffset(doc.content, offset),
 			wasAutoTriggered: wasAutoTriggered,
 			meta: [CompilerMetadata.Deprecated]
 		};
