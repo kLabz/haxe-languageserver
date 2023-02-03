@@ -408,13 +408,13 @@ class Context {
 
 	function onDidChangeWatchedFiles(event:DidChangeWatchedFilesParams) {
 		for (change in event.changes) {
+			serverRecording.onFileEvent(change);
+
 			switch change.type {
 				case Created:
-					serverRecording.onFileCreation(change);
 					callFileParamsMethod(change.uri, ServerMethods.ModuleCreated);
 				case Deleted:
 					diagnostics.clearDiagnostics(change.uri);
-					serverRecording.onFileDeletion(change);
 					callFileParamsMethod(change.uri, ServerMethods.Invalidate);
 				case _:
 			}
