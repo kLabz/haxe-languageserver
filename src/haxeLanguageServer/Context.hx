@@ -474,8 +474,6 @@ class Context {
 	public function callHaxeMethod<P, R>(method:HaxeRequestMethod<P, Response<R>>, ?params:P, ?token:CancellationToken, callback:(result:R) -> Null<String>,
 			errback:(error:String) -> Void) {
 		final beforeCallTime = Date.now().getTime();
-
-		var id = @:privateAccess haxeDisplayProtocol.nextRequestId; // ew..
 		if (method == "initialize") serverRecording.start(this);
 
 		haxeDisplayProtocol.sendRequest(cast method, params, token, function(response) {
@@ -484,8 +482,6 @@ class Context {
 				callback(response.result);
 				return;
 			}
-
-			serverRecording.onServerResponse(id, method, response);
 
 			final beforeProcessingTime = Date.now().getTime();
 			final debugInfo:Null<String> = try {
@@ -512,7 +508,6 @@ class Context {
 			languageServerProtocol.sendNotification(LanguageServerMethods.DidRunMethod, methodResult);
 		}, function(error:ResponseErrorData) {
 			var err = if (error.data != null) error.data[0].message else "unknown error";
-			serverRecording.onServerError(id, method, err);
 			errback(err);
 		});
 	}
