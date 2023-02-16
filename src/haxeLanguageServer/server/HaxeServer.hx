@@ -374,6 +374,7 @@ class HaxeServer {
 	function onMessage(msg:String) {
 		if (currentRequest != null) {
 			final request = currentRequest;
+			context.serverRecording.onServerMessage(request, msg);
 			currentRequest = null;
 			request.onData(msg);
 			updateRequestQueue();
@@ -384,13 +385,14 @@ class HaxeServer {
 	public function process(label:String, args:Array<String>, ?token:CancellationToken, cancellable:Bool, ?stdin:String, handler:ResultHandler) {
 		// create a request object
 		final request = new DisplayRequest(label, args, token, cancellable, stdin, handler);
-		context.serverRecording.onDisplayRequest(label, args);
 
 		// if the request is cancellable, set a cancel callback to remove request from queue
 		if (token != null) {
 			token.setCallback(function() {
 				if (request == currentRequest)
 					return; // currently processing requests can't be canceled
+
+				context.serverRecording.onDisplayRequestCancelled(request);
 
 				// remove from the queue
 				if (request == requestsHead)
@@ -417,6 +419,10 @@ class HaxeServer {
 			requestsTail = request;
 		}
 
+		if (currentRequest != null) {
+			context.serverRecording.onDisplayRequestQueued(request);
+		}
+
 		// process the queue
 		checkQueue();
 		updateRequestQueue();
@@ -441,6 +447,7 @@ class HaxeServer {
 			currentRequest = requestsHead;
 			requestsHead = currentRequest.next;
 			updateRequestQueue();
+			context.serverRecording.onDisplayRequest(currentRequest);
 			haxeConnection.send(currentRequest.prepareBody());
 		}
 	}
