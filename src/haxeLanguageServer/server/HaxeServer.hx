@@ -347,7 +347,6 @@ class HaxeServer {
 	}
 
 	function onExit(connection:HaxeConnection) {
-		// TODO: log crash
 		stopProgress();
 		crashes++;
 		if (crashes < 3) {
