@@ -6,6 +6,7 @@ import js.node.Buffer;
 import js.node.ChildProcess;
 import sys.FileSystem;
 import sys.io.File;
+
 import haxeLanguageServer.Configuration.ServerRecordingConfig;
 import haxeLanguageServer.helper.FsHelper;
 
@@ -21,22 +22,28 @@ function command(cmd:String, args:Array<String>) {
 
 	return {
 		code: p.status,
-		out: ((p.status == 0 ? p.stdout : p.stderr) : Buffer).toString().trim()
+		out: ((p.status == 0 ? p.stdout : p.stderr) :Buffer).toString().trim()
 	};
 }
 
-function getVcsState(patchOutput:String, untrackedDestination:String, config:ServerRecordingConfig):VcsState {
+function getVcsState(
+	patchOutput:String,
+	untrackedDestination:String,
+	config:ServerRecordingConfig
+):VcsState {
 	var ret = None;
 	ret = getGitState(patchOutput, untrackedDestination, config);
-	if (ret.match(None))
-		ret = getSvnState(patchOutput, config);
+	if (ret.match(None)) ret = getSvnState(patchOutput, config);
 	return ret;
 }
 
-function getGitState(patchOutput:String, untrackedDestination:String, config:ServerRecordingConfig):VcsState {
+function getGitState(
+	patchOutput:String,
+	untrackedDestination:String,
+	config:ServerRecordingConfig
+):VcsState {
 	var revision = command("git", ["rev-parse", "HEAD"]);
-	if (revision.code != 0)
-		return None;
+	if (revision.code != 0) return None;
 
 	command("git", applyGitExcludes(["diff", "--output", patchOutput, "--patch"], config));
 
@@ -45,9 +52,8 @@ function getGitState(patchOutput:String, untrackedDestination:String, config:Ser
 
 	if (!config.excludeUntracked) {
 		// Get untracked files (other than recording folder)
-		var untracked = command("git",
-			applyGitExcludes(["status", "--porcelain"],
-				config)).out.split("\n")
+		var untracked = command("git", applyGitExcludes(["status", "--porcelain"], config)).out
+			.split("\n")
 			.filter(l -> l.startsWith('?? '))
 			.map(l -> l.substr(3))
 			.filter(l -> l != recordingRelativeRoot(config) && l != ".haxelib" && l != "dump");
@@ -59,10 +65,8 @@ function getGitState(patchOutput:String, untrackedDestination:String, config:Ser
 			var promises = [];
 
 			for (f in untracked) {
-				if (f.startsWith('"'))
-					f = f.substr(1);
-				if (f.endsWith('"'))
-					f = f.substr(0, f.length - 1);
+				if (f.startsWith('"')) f = f.substr(1);
+				if (f.endsWith('"')) f = f.substr(0, f.length - 1);
 				promises.push(FsHelper.cp(f, Path.join([untrackedDestination, f])));
 			}
 
@@ -74,66 +78,55 @@ function getGitState(patchOutput:String, untrackedDestination:String, config:Ser
 }
 
 function applyGitExcludes(args:Array<String>, config:ServerRecordingConfig):Array<String> {
-	if (config.exclude.length == 0)
-		return args;
+	if (config.exclude.length == 0) return args;
 
 	args.push("--");
 	args.push(".");
-	for (ex in config.exclude)
-		args.push(':^$ex');
+	for (ex in config.exclude) args.push(':^$ex');
 	return args;
 }
 
 function getSvnState(patchOutput:String, config:ServerRecordingConfig):VcsState {
 	var revision = command("svn", ["info", "--show-item", "revision"]);
-	if (revision.code != 0)
-		return None;
+	if (revision.code != 0) return None;
 
 	var hasExcludes = config.exclude.length > 0;
 	var status = command("svn", ["status"]);
 	var untracked = [];
 
 	if (!config.excludeUntracked) {
-		untracked = [
-			for (line in status.out.split('\n')) {
-				if (line.charCodeAt(0) != '?'.code)
-					continue;
-				var entry = line.substr(1).trim();
+		untracked = [for (line in status.out.split('\n')) {
+			if (line.charCodeAt(0) != '?'.code) continue;
+			var entry = line.substr(1).trim();
 
-				if (hasExcludes) {
-					var excluded = false;
+			if (hasExcludes) {
+				var excluded = false;
 
-					for (ex in config.exclude) {
-						if (entry.startsWith(ex)) {
-							excluded = true;
-							break;
-						}
+				for (ex in config.exclude) {
+					if (entry.startsWith(ex)) {
+						excluded = true;
+						break;
 					}
-
-					if (excluded)
-						continue;
 				}
 
-				entry;
+				if (excluded) continue;
 			}
-		];
+
+			entry;
+		}];
 	}
 
-	for (f in untracked)
-		command("svn", ["add", f]);
+	for (f in untracked) command("svn", ["add", f]);
 	var patch = command("svn", ["diff", "--depth=infinity", "--patch-compatible"]);
 	var hasPatch = patch.out.trim().length > 0;
-	if (hasPatch)
-		File.saveContent(patchOutput, patch.out);
-	for (f in untracked)
-		command("svn", ["rm", "--keep-local", f]);
+	if (hasPatch) File.saveContent(patchOutput, patch.out);
+	for (f in untracked) command("svn", ["rm", "--keep-local", f]);
 
 	return Svn(revision.out, hasPatch);
 }
 
 function recordingRelativeRoot(config:ServerRecordingConfig):String {
 	var ret = Path.isAbsolute(config.path) ? "" : config.path;
-	if (ret.startsWith("./") || ret.startsWith("../"))
-		ret = "";
+	if (ret.startsWith("./") || ret.startsWith("../")) ret = "";
 	return ret.split("/")[0] + "/";
 }
