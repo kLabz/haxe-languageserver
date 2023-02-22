@@ -295,6 +295,7 @@ class HaxeServer {
 					socket.destroy();
 					trace("Client disconnected");
 				}
+				context.resetInvalidatedFiles();
 				process("compilation", split, null, false, null, Raw(callback));
 			});
 			socket.on(SocketEvent.Error, function(err) {
