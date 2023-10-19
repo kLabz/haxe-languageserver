@@ -82,6 +82,9 @@ class MissingFieldsActions {
 						Some('Implement fields for ${printer.printPathWithParams(cause.args.parent)}');
 					case PropertyAccessor:
 						Some('Implement ${cause.args.isGetter ? "getter" : "setter"} for ${cause.args.property.name}');
+					case StaticFieldAccess:
+						// TODO
+						None;
 					case FieldAccess:
 						// There's only one field in this case... I think
 						final field = fields[0] ?? return None;

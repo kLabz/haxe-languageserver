@@ -103,7 +103,7 @@ function isModuleLevel<T>(origin:Null<ClassFieldOrigin<T>>) {
 			}
 			switch moduleType.kind {
 				case Class:
-					final cl:JsonClass = moduleType.args;
+					final cl:JsonClass<JsonModulePath> = moduleType.args;
 					cl.kind.kind == KModuleFields;
 				case _: false;
 			}

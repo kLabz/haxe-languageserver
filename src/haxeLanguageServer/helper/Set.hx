@@ -17,4 +17,11 @@ abstract Set<T:{}>(Map<T, Bool>) {
 	public inline function has(item:T):Bool {
 		return this[item] == true;
 	}
+
+	public inline function iterator():Iterator<T>
+		return this.keys();
+
+	@:to
+	public inline function toIterable():Iterable<T>
+		return { iterator: this.keys };
 }

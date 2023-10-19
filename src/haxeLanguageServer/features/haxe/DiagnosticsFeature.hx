@@ -6,6 +6,7 @@ import haxe.ds.BalancedTree;
 import haxe.io.Path;
 import haxeLanguageServer.LanguageServerMethods;
 import haxeLanguageServer.helper.PathHelper;
+import haxeLanguageServer.helper.Set;
 import haxeLanguageServer.protocol.DisplayPrinter;
 import haxeLanguageServer.server.DisplayResult;
 import js.Node.clearImmediate;
@@ -13,6 +14,7 @@ import js.Node.setImmediate;
 import js.node.ChildProcess;
 import jsonrpc.CancellationToken;
 import languageServerProtocol.Types.Diagnostic;
+import languageServerProtocol.Types.DiagnosticRelatedInformation;
 import languageServerProtocol.Types.DiagnosticSeverity;
 import languageServerProtocol.Types.Location;
 
@@ -168,42 +170,10 @@ class DiagnosticsFeature {
 			final newDiagnostics = filterRelevantDiagnostics(data.diagnostics);
 			final diagnostics = new Array<Diagnostic>();
 			for (hxDiag in newDiagnostics) {
-				final kind:Int = hxDiag.kind;
-				final range:Range = if (hxDiag.range == null) {
-					// range is not optional in the LSP yet
-					{
-						start: {line: 0, character: 0},
-						end: {line: 0, character: 0}
-					}
-				} else {
-					context.displayOffsetConverter.byteRangeToCharacterRange(hxDiag.range, doc);
-				};
-				final diag:Diagnostic = {
-					range: range,
-					code: hxDiag.code,
-					severity: hxDiag.severity,
-					message: hxDiag.kind.getMessage(doc, hxDiag.args, range),
-					data: {kind: hxDiag.kind},
-					relatedInformation: hxDiag.relatedInformation?.map(rel -> {
-						location: {
-							uri: rel.location.file.toUri(),
-							range: rel.location.range,
-						},
-						message: convertIndentation(rel.message, rel.depth)
-					})
+				for (d in hxDiag.toDiagnostics(context, doc)) {
+					argumentsMap.set({code: hxDiag.kind, range: d.range}, hxDiag.args);
+					diagnostics.push(d);
 				}
-				if (kind == RemovableCode || kind == UnusedImport || diag.message.contains("has no effect") || kind == InactiveBlock) {
-					diag.severity = Hint;
-					diag.tags = [Unnecessary];
-				}
-				if (diag.message == "This case is unused") {
-					diag.tags = [Unnecessary];
-				}
-				if (kind == DeprecationWarning) {
-					diag.tags = [Deprecated];
-				}
-				argumentsMap.set({code: kind, range: diag.range}, hxDiag.args);
-				diagnostics.push(diag);
 			}
 			context.languageServerProtocol.sendNotification(PublishDiagnosticsNotification.type, {uri: uri, diagnostics: diagnostics});
 			sent[uri] = true;
@@ -253,23 +223,6 @@ class DiagnosticsFeature {
 			|| !diagnostics.exists(b -> a != b && a.range != null && b.range != null && b.range.contains(a.range)));
 
 		return diagnostics;
-	}
-
-	function convertIndentation(msg:String, depth:Int):String {
-		if (msg.startsWith("... ")) {
-			msg = msg.substr(4);
-			depth++;
-		}
-
-		if (depth < 2)
-			return msg;
-
-		final buf = new StringBuf();
-		for (_ in 1...depth)
-			buf.add("⋅⋅⋅");
-		buf.add(" ");
-		buf.add(msg);
-		return buf.toString();
 	}
 
 	public function clearDiagnostics(uri:DocumentUri) {
@@ -343,6 +296,7 @@ enum abstract MissingFieldCauseKind<T>(String) {
 	final ImplementedInterface:MissingFieldCauseKind<{parent:JsonTypePathWithParams}>;
 	final PropertyAccessor:MissingFieldCauseKind<{property:JsonClassField, isGetter:Bool}>;
 	final FieldAccess:MissingFieldCauseKind<{}>;
+	final StaticFieldAccess:MissingFieldCauseKind<{}>;
 	final FinalFields:MissingFieldCauseKind<{fields:Array<JsonClassField>}>;
 }
 
@@ -374,6 +328,175 @@ typedef MissingFieldDiagnostics = {
 	var entries:Array<MissingFieldDiagnostic>;
 }
 
+private typedef HaxeDiagnosticData<T> = {
+	final kind:DiagnosticKind<T>;
+	final ?range:Range;
+	final ?code:String;
+	final severity:DiagnosticSeverity;
+	final args:T;
+	final relatedInformation:Null<Array<HaxeDiagnosticRelatedInformation>>;
+}
+
+@:forward
+abstract HaxeDiagnostic<T>(HaxeDiagnosticData<T>) from HaxeDiagnosticData<T> to HaxeDiagnosticData<T> {
+	// TODO: update code actions too!
+		public function toDiagnostics(context:Context, doc:HaxeDocument):Array<Diagnostic> {
+		function getRange() {
+			if (this.range != null) return context.displayOffsetConverter.byteRangeToCharacterRange(this.range, doc);
+
+			// range is not optional in the LSP yet
+			return {
+				start: {line: 0, character: 0},
+				end: {line: 0, character: 0}
+			};
+		}
+
+		final kind:Int = this.kind;
+		final range = getRange();
+		final printer = new DisplayPrinter(Never);
+
+		function makeDiag(message:String, ?relatedInformation:Array<DiagnosticRelatedInformation>):Diagnostic {
+			return {
+				range: range,
+				code: this.code,
+				severity: this.severity,
+				message: message,
+				data: {kind: kind},
+				relatedInformation: relatedInformation ?? this.relatedInformation?.map(rel -> {
+					location: {
+						uri: rel.location.file.toUri(),
+						range: rel.location.range,
+					},
+					message: convertIndentation(rel.message, rel.depth)
+				})
+			};
+		}
+
+		return switch (this.kind : DiagnosticKind<T>) {
+			case MissingFields:
+				final causes = {
+					fields: new Set<String>(),
+					interfaces: new Set<String>(),
+					statics: new Set<String>(),
+					moduleFields: new Set<String>(),
+					properties: new Set<String>(),
+					misc: new Set<{msg:String, ?relatedInformation:Array<DiagnosticRelatedInformation>}>()
+				};
+
+				final args:MissingFieldDiagnostics = this.args;
+				args.entries.iter(diag -> switch (diag.cause.kind) {
+					case AbstractParent: causes.fields.add(printer.printPathWithParams(diag.cause.args.parent)); // TODO: check that one
+					case ImplementedInterface: causes.interfaces.add(printer.printPathWithParams(diag.cause.args.parent));
+					case PropertyAccessor: causes.properties.add(diag.cause.args.property.name);
+
+					// Haxe 4.3.3+
+					case StaticFieldAccess:
+						switch (args.moduleType.kind) {
+							case Class:
+								switch (args.moduleType.args.kind.kind) {
+									case KModuleFields:
+										final ckind:JsonClassKind<JsonModulePath> = args.moduleType.args.kind;
+										causes.moduleFields.add(ckind.args.moduleName);
+									case _: causes.statics.add(args.moduleType.name);
+								}
+							case _: causes.statics.add(args.moduleType.name);
+						}
+
+					case FieldAccess:
+						switch (args.moduleType.kind) {
+							case Class:
+								switch (args.moduleType.args.kind.kind) {
+									case KAbstractImpl:
+										final ckind:JsonClassKind<JsonTypePath> = args.moduleType.args.kind;
+										causes.statics.add(ckind.args.typeName);
+									case _: causes.fields.add(args.moduleType.name);
+								}
+
+							// TODO special case in actions too
+							case _ if (args.moduleType.name == "Void"): causes.misc.add({msg: 'Type Void has no fields'});
+							case _: causes.fields.add(args.moduleType.name);
+						}
+
+					case FinalFields:
+						final fields:Array<JsonClassField> = diag.cause.args.fields;
+						final relatedInformation = [];
+						for (f in fields) {
+							relatedInformation.push({
+								location: {
+									// TODO: fix file
+									// file: new FsPath(f.pos.file),
+									uri: doc.uri,
+									// TODO converter
+									range: doc.rangeAt(f.pos.min, f.pos.max)
+									// range: {
+									// 	// TODO
+									// 	start: {line: 0, character: 0},
+									// 	end: {line: 0, character: 0}
+									// }
+								},
+								message: "Uninitialized final field"
+							});
+						}
+						causes.misc.add({
+							msg: 'Missing constructor for ${args.moduleType.name} (uninitialized final fields)',
+							relatedInformation: relatedInformation
+						});
+				});
+
+				final diags = [];
+
+				final interfaces = Lambda.array(causes.interfaces);
+				if (interfaces.length > 0) diags.push(makeDiag('Missing fields for interface${interfaces.length > 0 ? "s" : ""} ${interfaces.join(", ")}'));
+
+				// Can't have more than one on same diagnostic?
+				// final properties = Lambda.array(causes.properties);
+				// if (properties.length > 0) diags.push(makeDiag('Missing fields for propertie${properties.length > 0 ? "s" : ""} ${properties.join(", ")}'));
+
+				for (cause in causes.fields) diags.push(makeDiag('Missing field for $cause'));
+				for (cause in causes.properties) diags.push(makeDiag('Missing fields for property $cause'));
+				for (cause in causes.statics) diags.push(makeDiag('Missing static field for $cause'));
+				for (cause in causes.moduleFields) diags.push(makeDiag('Missing module level field for $cause'));
+				for (cause in causes.misc) diags.push(makeDiag(cause.msg, cause.relatedInformation));
+
+				diags;
+
+			case _:
+				final diag = makeDiag(this.kind.getMessage(doc, this.args, range));
+
+				if (kind == RemovableCode || kind == UnusedImport || diag.message.contains("has no effect") || kind == InactiveBlock) {
+					diag.severity = Hint;
+					diag.tags = [Unnecessary];
+				}
+				if (diag.message == "This case is unused") {
+					diag.tags = [Unnecessary];
+				}
+				if (kind == DeprecationWarning) {
+					diag.tags = [Deprecated];
+				}
+
+				[diag];
+		};
+
+	}
+
+	function convertIndentation(msg:String, depth:Int):String {
+		if (msg.startsWith("... ")) {
+			msg = msg.substr(4);
+			depth++;
+		}
+
+		if (depth < 2)
+			return msg;
+
+		final buf = new StringBuf();
+		for (_ in 1...depth)
+			buf.add("⋅⋅⋅");
+		buf.add(" ");
+		buf.add(msg);
+		return buf.toString();
+	}
+}
+
 enum abstract DiagnosticKind<T>(Int) from Int to Int {
 	final UnusedImport:DiagnosticKind<Void>;
 	final UnresolvedIdentifier:DiagnosticKind<Array<{kind:UnresolvedIdentifierSuggestion, name:String}>>;
@@ -388,7 +511,7 @@ enum abstract DiagnosticKind<T>(Int) from Int to Int {
 		this = i;
 	}
 
-	public function getMessage(doc:Null<HaxeDocument>, args:T, range:Range) {
+	public function getMessage(doc:HaxeDocument, args:T, range:Range) {
 		return switch (this : DiagnosticKind<T>) {
 			case UnusedImport: "Unused import/using";
 			case UnresolvedIdentifier:
@@ -402,27 +525,9 @@ enum abstract DiagnosticKind<T>(Int) from Int to Int {
 			case ParserError: args;
 			case DeprecationWarning: args;
 			case InactiveBlock: "Inactive conditional compilation block";
-			case MissingFields:
-				var printer = new DisplayPrinter(Never);
-				var cause = args.entries.map(diag -> switch (diag.cause.kind) {
-					case AbstractParent: printer.printPathWithParams(diag.cause.args.parent);
-					case ImplementedInterface: printer.printPathWithParams(diag.cause.args.parent);
-					case PropertyAccessor: diag.cause.args.property.name;
-					case FieldAccess: "this";
-					case FinalFields: "this";
-				}).join(", ");
-				"Missing fields for " + cause;
+			case MissingFields: "Missing fields"; // Handled in HaxeDiagnostic.toDiagnostics()
 		}
 	}
-}
-
-private typedef HaxeDiagnostic<T> = {
-	final kind:DiagnosticKind<T>;
-	final ?range:Range;
-	final ?code:String;
-	final severity:DiagnosticSeverity;
-	final args:T;
-	final relatedInformation:Null<Array<HaxeDiagnosticRelatedInformation>>;
 }
 
 private typedef HaxeDiagnosticRelatedInformation = {
